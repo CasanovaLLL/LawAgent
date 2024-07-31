@@ -15,17 +15,13 @@
 
 案件摘要生成
 
-通过事实认定模型、事件抽取模型（UIE、YAYIUIE）抽取短文本后构建索引？
 
 案件 $\leftrightarrow$ 法条 双向映射关系构建
-
-法条 $\lrarr$ 教材 双向映射关系构建 
 
 **检索方法**
 
 - Embedding 
 - BM25
-- TF-IDF
 
 多路召回
 
