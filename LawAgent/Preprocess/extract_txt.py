@@ -6,8 +6,9 @@ import re
 import docx
 import pypandoc
 import fitz  # PyMuPDF
-
-
+import win32com.client
+# # 下载 pandoc 并设置 pypandoc 使用该版本
+# pypandoc.download_pandoc()
 def find_documents(root_dir):
     """
     递归查找指定文件夹下的所有.doc、.docx和.pdf文件，并返回它们的绝对路径列表。
@@ -39,9 +40,17 @@ def extract_text_from_docx(file_path):
     return '\n'.join(text)
 
 
-def extract_text_from_doc(file_path):
-    return pypandoc.convert_file(file_path, 'plain')
+# def extract_text_from_doc(file_path):
+#     return pypandoc.convert_file(file_path, 'plain')
 
+def extract_text_from_doc(file_path):
+    word = win32com.client.Dispatch("Word.Application")
+    word.Visible = False
+    doc = word.Documents.Open(file_path)
+    text = doc.Range().Text
+    doc.Close()
+    word.Quit()
+    return text
 
 def extract_text_from_pdf(file_path):
     text = []
@@ -74,33 +83,31 @@ def extract_and_clean_text(file_path):
     return clean_text(text)
 
 
-def save_text_to_file(text, output_folder, file_name):
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-    output_path = os.path.join(output_folder, file_name + '.txt')
+def save_text_to_file(text, output_path):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w', encoding='utf-8') as file:
         file.write(text)
 
+def process_file(file_path, input_folder, output_folder):
 
-def process_file(file_path, output_folder):
     text = extract_and_clean_text(file_path)
-    if len(text)==0:
-        print(f"数据抽取为空；待检查：{file_path}")
-    file_name = os.path.splitext(os.path.basename(file_path))[0]
-    save_text_to_file(text, output_folder, file_name)
-# 使用示例：
-# 假设你想搜索的文件夹路径是'/path/to/your/folder'
-file_path_list = find_documents(r'monopoly_data')
+    relative_path = os.path.relpath(file_path, input_folder)
+    output_path = os.path.join(output_folder, os.path.splitext(relative_path)[0] + '.txt')
+    save_text_to_file(text, output_path)
 
-for file_path in file_path_list:
-    # print(f"正在抽取:{file_path}")
-    process_file(file_path,'txt_data')
-    # file_txt=extract_and_clean_text(file_path)
-    '''
-    现在直接根据第三方库读取 doc、docx、pdf文件中的文本数据，并且进行简单的清洗过滤
-    文本提取的问题：结构可能会缺失、联想（北京）有限公司垄断案中止调查决定书.pdf 里面是以图片形式存在
-    TODO: 去噪/清洗 -> 分块 -> embedding -> index -> search
-    法一：全部交给LLM；需要担心数据泄漏、准确性、格式等问题
-    法二：基于规则：需要处理很多极端案例
-    '''
-    # print(file_txt)
+def process_folder(input_folder, output_folder):
+    for root, _, files in os.walk(input_folder):
+        for file in files:
+            if file.lower().endswith(('.docx', '.doc', '.pdf')):
+                file_path = os.path.join(root, file)
+                try:
+                    print(f"正在处理：{file_path}")
+                    process_file(file_path, input_folder, output_folder)
+                except BaseException as e:
+                    print(f"Debug :{str(e)}")
+
+
+
+input_folder=r'data/monopoly_data'
+output_folder=r'data/monopoly_txt_data'
+process_folder(input_folder, output_folder)
