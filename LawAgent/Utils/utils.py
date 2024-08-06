@@ -16,7 +16,8 @@ __all__ = [
     'get_public_ip',
     'get_computer_name_and_username',
     'llm_response2json',
-    'dir_txt2jsonl'
+    'dir_txt2jsonl',
+    'build_username'
 ]
 
 
@@ -102,7 +103,7 @@ def dir_txt2jsonl(work_dir, save_path):
                         "o_text": content
                     })
     with open(save_path, 'w', encoding='utf-8') as jsonl_file:
-        for data in tqdm(all_data,desc="Writing..."):
+        for data in tqdm(all_data, desc="Writing..."):
             jsonl_file.write(json.dumps(data, ensure_ascii=False) + '\n')
 
 
@@ -179,3 +180,7 @@ def llm_response2json(text: str):
             pass
 
     return parsed_blocks
+
+
+def build_username():
+    return os.getenv("USERNAME", f"{get_public_ip()}-{'-'.join(get_computer_name_and_username())}")

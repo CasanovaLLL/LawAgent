@@ -5,24 +5,12 @@ from openai import OpenAI
 from typing import Optional, Dict, List, Iterator, Union, Literal
 import copy
 import os
-from pprint import pformat
 from typing import Dict, Iterator, List, Optional
 
-import openai
-
-if openai.__version__.startswith('0.'):
-    from openai.error import OpenAIError  # noqa
-else:
-    from openai import OpenAIError
-
-from qwen_agent.llm.base import ModelServiceError, register_llm
-from qwen_agent.llm.text_base import BaseTextChatModel
-from qwen_agent.log import logger
-
 from qwen_agent.llm.base import register_llm, BaseChatModel, ModelServiceError
-from qwen_agent.llm.schema import ASSISTANT, DEFAULT_SYSTEM_MESSAGE, SYSTEM, USER, Message
+from qwen_agent.llm.schema import ASSISTANT, DEFAULT_SYSTEM_MESSAGE, SYSTEM, USER, Message, FUNCTION
 from qwen_agent.llm.schema import Message
-from qwen_agent.llm.oai import TextChatAtOAI
+from qwen_agent.llm.oai import TextChatAtOAI, OpenAIError
 
 
 @register_llm('DeepSeek')
@@ -37,6 +25,7 @@ class DeepSeekLLM(TextChatAtOAI):
         }
         cfg.update(deepseek_cfg)
         super().__init__(cfg)
+        self.tool_calls = []
 
     def _chat_with_functions(
             self,
@@ -46,5 +35,33 @@ class DeepSeekLLM(TextChatAtOAI):
             delta_stream: bool,
             generate_cfg: dict,
             lang: Literal['en', 'zh'],
+            tool_choice: Union[Literal["auto", "none", "required"], Dict] = "auto"
     ) -> Union[List[Message], Iterator[List[Message]]]:
-        raise NotImplementedError
+        if delta_stream or stream:
+            raise NotImplementedError("DeepSeek function call does not support delta stream")
+
+        messages = [msg.model_dump() for msg in messages]
+
+        if messages[-1]["role"] == FUNCTION:
+            messages[-1]["role"] = "tool"
+            messages[-1]["tool_call_id"] = self.tool_calls[-1]
+            self.tool_calls.pop(-1)
+
+        # 准备工具列表
+        tools = [{"type": "function", "function": func} for func in functions]
+
+        try:
+            # 调用聊天完成API
+            response = self._chat_complete_create(model=self.model, messages=messages, stream=False, tools=tools,
+                                                  **generate_cfg)
+
+            if response.choices[0].message.tool_calls:
+                return_messages = []
+                for tool_call in response.choices[0].message.tool_calls:
+                    if tool_call.type == "function":
+                        self.tool_calls.append(tool_call.id)
+                        return_messages.append(Message(FUNCTION, tool_call.function))
+                return return_messages
+            return [Message(ASSISTANT, response.choices[0].message.content)]
+        except OpenAIError as ex:
+            raise ModelServiceError(exception=ex)
