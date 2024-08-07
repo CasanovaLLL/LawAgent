@@ -60,5 +60,9 @@ async def search_laws(request: LawSearchRequest):
     }
 
 
+def main():
+    uvicorn.run(app, host="0.0.0.0", port=10005)
+
+
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=10005)

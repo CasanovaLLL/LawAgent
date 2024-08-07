@@ -19,11 +19,11 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",  # 指定长描述内容类型，如果使用Markdown
     url="https://github.com/CasanovaLLL/LawAgent",  # 仓库地址
-    packages=find_packages(exclude="data/"),  # 自动发现并包含所有包
+    packages=find_packages(exclude=["data/", "venv/"]),  # 自动发现并包含所有包
     python_requires='>=3.10',  # 指定Python兼容版本
     entry_points={
         "console_scripts": [
-
+            "start-server=LawAgent.ToolServer.server:main",
         ]
     },
     install_requires=requirements,
