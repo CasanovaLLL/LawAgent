@@ -26,16 +26,19 @@ class RecursiveClassifier(BaseTool):
 
     def __init__(self, tree_path: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.deepseek_key = os.environ.get('DEEPSEEK_KEY', kwargs.get('deepseek_key', None))
+        self.deepseek_key = os.environ.get('DEEPSEEK_API_KEY', kwargs.get('deepseek_api_key', None))
         self.base_url = os.environ.get('DEEPSEEK_BASE_URL', kwargs.get('deepseek_base_url', "https://api.deepseek.com"))
         with open(tree_path, 'r', encoding='utf-8') as f:
             self.tree = json5.load(f)
 
     def call(self, params: Union[str, dict], **kwargs) -> Union[str, list, dict]:
-        prompt = json5.loads(params)['prompt']
-        return self.classify(prompt, self.tree)
+        if isinstance(params, str):
+            params = json5.loads(params)
+        prompt = params['prompt']
+        return self.classify(prompt, self.tree["root"])
 
     def classify(self, prompt: str, node: dict) -> str:
+        # print("Classifier prompt", prompt, node)
         description = node['description']
         next_nodes = node['next']
         if len(next_nodes) == 1:
@@ -50,6 +53,7 @@ class RecursiveClassifier(BaseTool):
                 is_multy = node.get('is_multy', False)
                 base_prompt = BASE_PROMPT if not is_multy else MULTI_PROMPT
                 sys_prompt = base_prompt.format(description=description, choice=next_nodes)
+                sys_prompt += BASE_OUTPUT_EXAMPLE if not is_multy else MULTY_OUTPUT_EXAMPLE
                 response = client.chat.completions.create(
                     model="deepseek-chat",
                     messages=[
@@ -64,36 +68,47 @@ class RecursiveClassifier(BaseTool):
                     }
                 )
                 next_node = json5.loads(response.choices[0].message.content)['choice']
+                print("Classifier next node", next_node)
+                if is_multy:
+                    assert isinstance(next_node, list)
+                    return next_node
+                assert isinstance(next_node, str)
                 if next_node in node['next']:
                     if next_data := self.tree.get(next_node, None):
                         return self.classify(prompt, next_data)
                     return next_node
 
-            finally:
+            except (OpenAIError, AssertionError):
                 pass
         return next_nodes[0]
 
 
-BASE_PROMPT = """
+BASE_PROMPT = r"""
 你是一个案件分类器，你需要根据提供的事件文本和背景知识，把事件分类到待选案由中的一个。
 请输出一个json格式的字符串
 背景知识：
 {description}
 待选案由：
 {choice}
-输出样例：
-{
-    "choice":"垄断纠纷"
-}
+
 """
 
-MULTI_PROMPT = """
+MULTI_PROMPT = r"""
 你是一个案件分类器，你需要根据提供的事件文本和背景知识，把事件分类到待选案由中的一个或多个。
 请输出一个json格式的字符串
 背景知识：
 {description}
 待选案由：
 {choice}
+
+"""
+BASE_OUTPUT_EXAMPLE = """
+输出样例：
+{
+    "choice":"垄断纠纷"
+}
+"""
+MULTY_OUTPUT_EXAMPLE = """
 输出样例：
 {
     "choice":["垄断纠纷"]
@@ -155,7 +170,7 @@ def _description_generate(flatten_tree: dict, reference_dir: str = None):
 
 
 if __name__ == '__main__':
-    with open("flatten.json", "r") as f:
+    with open("分类树-细.json", "r") as f:
         flatten_tree = json5.load(f)
     flatten_tree = _description_generate(flatten_tree, reference_dir="reference")
     with open("flatten_with_desc.json", "w") as f:
