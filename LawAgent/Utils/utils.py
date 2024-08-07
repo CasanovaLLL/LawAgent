@@ -17,7 +17,8 @@ __all__ = [
     'get_computer_name_and_username',
     'llm_response2json',
     'dir_txt2jsonl',
-    'build_username'
+    'build_username',
+    'unique_with_order_list_comprehension'
 ]
 
 
@@ -184,3 +185,8 @@ def llm_response2json(text: str):
 
 def build_username():
     return os.getenv("USERNAME", f"{get_public_ip()}-{'-'.join(get_computer_name_and_username())}")
+
+
+def unique_with_order_list_comprehension(lst):
+    seen = set()
+    return [x for x in lst if not (x in seen or seen.add(x))]
