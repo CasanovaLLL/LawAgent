@@ -31,3 +31,18 @@ def encode_long_text(sentence: str):
 
     target_string = [_ for _ in _window_text_generate()]
     return embedding_model.encode(target_string)
+
+
+if __name__ == '__main__':
+    import json
+    from tqdm import tqdm
+
+    o_data = []
+    with open("new_ie.jsonl") as f:
+        for line in tqdm(f, "Loading"):
+            if line:
+                o_data.append(json.loads(line))
+    for ele in tqdm(o_data, "Encoding"):
+        ele["embeddings"] = encode_long_text(ele["summary"])
+        with open("new_ie_embedding.jsonl", "a") as f:
+            f.write(json.dumps(ele, ensure_ascii=False) + "\n")
