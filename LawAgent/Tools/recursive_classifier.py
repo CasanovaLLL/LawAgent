@@ -3,6 +3,7 @@ import os
 
 import json5
 import requests
+import editdistance
 from typing import Union
 
 from qwen_agent.tools.base import BaseTool, register_tool
@@ -38,6 +39,16 @@ class RecursiveClassifier(BaseTool):
         return self.classify(prompt, self.tree["root"])
 
     def classify(self, prompt: str, node: dict) -> str:
+        def _find_nearest_node(node_list: list, query):
+            min_distance = 1
+            _result = None
+            for _ in node_list:
+                distance = editdistance.eval(query, _) / max(len(query), len(_))
+                if distance < min_distance:
+                    min_distance = distance
+                    _result = _
+            return _result
+
         # print("Classifier prompt", prompt, node)
         description = node['description']
         next_nodes = node['next']
@@ -71,8 +82,10 @@ class RecursiveClassifier(BaseTool):
                 print("Classifier next node", next_node)
                 if is_multy:
                     assert isinstance(next_node, list)
+                    next_node = [_find_nearest_node(next_nodes, _) for _ in next_node]
                     return next_node
                 assert isinstance(next_node, str)
+                next_node = _find_nearest_node(next_nodes, next_node)
                 if next_node in node['next']:
                     if next_data := self.tree.get(next_node, None):
                         return self.classify(prompt, next_data)

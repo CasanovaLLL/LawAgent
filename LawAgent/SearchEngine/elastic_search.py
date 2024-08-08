@@ -132,7 +132,7 @@ class LawDatabase:
             # 执行kNN查询
             knn_results = self.es.search(index=index_name, body=knn_query)
 
-            return match_results["hits"]["hits"], knn_results["hits"]["hits"]
+            return merge_and_rank(match_results["hits"]["hits"], knn_results["hits"]["hits"], top_k)
 
         return match_results["hits"]["hits"]
 
@@ -176,3 +176,34 @@ class LawDatabase:
             top_k
         )
         return result
+
+
+def calculate_rrf_score(results, rank):
+    """计算每个文档的RRF分数"""
+    rrf_scores = {}
+    for hit in results:
+        doc_id = hit["_id"]
+        if doc_id not in rrf_scores:
+            rrf_scores[doc_id] = 0
+        if rank > 0:
+            rrf_scores[doc_id] += 1 / rank
+        rank += 1
+    return rrf_scores
+
+
+def merge_and_rank(match_results, knn_results, top_k):
+    # 计算两个结果集的RRF分数
+    match_rrf_scores = calculate_rrf_score(match_results, 1)
+    knn_rrf_scores = calculate_rrf_score(knn_results, 1)
+
+    # 合并结果并计算总分
+    merged_results = []
+    for doc_id, score in match_rrf_scores.items():
+        total_score = score + knn_rrf_scores.get(doc_id, 0)
+        merged_results.append({"_id": doc_id, "score": total_score})
+
+    # 根据总分排序
+    sorted_results = sorted(merged_results, key=lambda x: x["score"], reverse=True)
+
+    # 返回前top_k个结果
+    return [result["_id"] for result in sorted_results[:top_k]]

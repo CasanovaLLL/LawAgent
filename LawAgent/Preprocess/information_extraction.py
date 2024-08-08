@@ -9,17 +9,21 @@ from tqdm import tqdm
 import json5
 import json
 from typing import Literal
+import json
+import jsonlines
 
 __all__ = [
     "classify_text",
     "extract_law_from_text",
     "summarize_text",
 ]
-
-URL = os.environ["DIFY_BASE_URL"] + "/workflows/run"
-USERNAME = os.getenv("USERNAME", f"{get_public_ip()}-{'-'.join(get_computer_name_and_username())}")
-DIFY_API_KEY_CLASSIFIER = os.environ["DIFY_API_KEY_CLASSIFIER"]
-DIFY_API_KEY_LAW_EXTRACTION = os.environ["DIFY_API_KEY_LAW_EXTRACTION"]
+try:
+    URL = os.environ["DIFY_BASE_URL"] + "/workflows/run"
+    USERNAME = os.getenv("USERNAME", f"{get_public_ip()}-{'-'.join(get_computer_name_and_username())}")
+    DIFY_API_KEY_CLASSIFIER = os.environ["DIFY_API_KEY_CLASSIFIER"]
+    DIFY_API_KEY_LAW_EXTRACTION = os.environ["DIFY_API_KEY_LAW_EXTRACTION"]
+except KeyError:
+    pass
 
 
 def classify_text(text: str) -> str:
@@ -147,3 +151,50 @@ def information_extraction(jsonl_path: str,
             else:
                 with open(fail_save_path, 'a') as w:
                     w.write(json.dumps(data, ensure_ascii=False) + "\n")
+
+
+def labels_extraction():
+    with open('ie.jsonl', 'r', encoding='utf-8') as f:
+        for line in tqdm(f):
+            json_data = json.loads(line)
+            labels_str = json_data['labels']
+            labels_str = labels_str.replace('```json\n', '').replace('\n```', '')
+            labels_json_data = json.loads(labels_str)
+            labels_key_list = []
+            for k, v in labels_json_data.items():
+                if k == '分类':
+                    try:
+                        v_list = eval(str(v))
+                        for v_item in v_list:
+                            temp_key_list = v_item.split("-")
+                            labels_key_list += temp_key_list
+                    except BaseException as e:
+                        print(str(e))
+                        print(labels_json_data)
+                elif k == 'categories':
+                    try:
+                        v_list = eval(str(v))
+                        for v_item in v_list:
+                            temp_key_list = v_item.split("-")
+                            labels_key_list += temp_key_list
+                    except BaseException as e:
+                        print(str(e))
+                        print(labels_json_data)
+                elif v != False and v != True and len(str(v)) > 2:
+                    temp_key_list = k.split("-")
+                    labels_key_list += temp_key_list
+                if v == True:
+                    temp_key_list = k.split("-")
+                    labels_key_list += temp_key_list
+            labels_key_list = list(set(labels_key_list))
+            json_data['use_labels'] = labels_key_list
+            if len(labels_key_list) > 0:
+                with jsonlines.open('new_ie.jsonl', mode='a') as writer:
+                    writer.write(json_data)
+            else:
+                with jsonlines.open('new_ie_fail.jsonl', mode='a') as writer:
+                    writer.write(json_data)
+
+
+if __name__ == '__main__':
+    labels_extraction()

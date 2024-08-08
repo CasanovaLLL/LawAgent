@@ -43,7 +43,8 @@ class LawSearchRequest(BaseModel):
 async def search_laws(request: LawSearchRequest):
     embedding = None
     if request.need_embedding:
-        raise NotImplementedError("need_embedding is not implemented yet")
+        from LawAgent.Utils.embedding import embedding_model
+        embedding = embedding_model().encode(request.query)
     data = db.search_laws(request.query, request.labels, embedding, request.top_k)
     result = []
     if data:
@@ -52,7 +53,7 @@ async def search_laws(request: LawSearchRequest):
                 ele = ele["_source"]
                 result.append(f"""
                 {ele["depth"]}:{ele["code"]}
-                """)
+                """.strip())
             except KeyError:
                 pass
     return {
