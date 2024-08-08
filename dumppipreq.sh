@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 source ./venv/bin/activate
-pipreqs  --force --mode compat   --savepath ./requirements.txt ./LawAgent
+pipreqs  --force --mode no-pin  --savepath ./requirements.txt ./LawAgent

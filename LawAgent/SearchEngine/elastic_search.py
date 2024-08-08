@@ -1,21 +1,19 @@
 import os
 import ssl
+import re
 import warnings
 
 from elasticsearch import Elasticsearch, helpers
 from LawAgent.Utils import generate_timestamp
 import json
 from tqdm import tqdm
+from typing import Union, List
+from LawAgent.Utils import valid_label_match, check_labels
 
 try:
     _context = ssl.create_default_context(cafile=os.environ.get('ELASTICSEARCH_CA_PATH', 'http_ca.crt'))
 except FileNotFoundError:
     pass
-"""
-TODO
-加载法典，加载类案
-提供带label过滤器的相似度检索
-"""
 
 
 class LawDatabase:
@@ -29,7 +27,7 @@ class LawDatabase:
         auth = dict()
         self.index_prefix = "lawagent-"
         self.law_index = os.environ.get("LAW_INDEX", "lawagent-law")
-
+        self.case_index = os.environ.get("CASE_INDEX", "lawagent-case")
         try:
             auth['api_key'] = os.environ['ELASTICSEARCH_API_KEY']
         except KeyError:
@@ -67,13 +65,47 @@ class LawDatabase:
 
         self._load_data(data_file_path, body, index_name)
 
+    def load_case(self, data_file_path, index_name=None):
+        """
+        数据加载到Elasticsearch中，并确保所有字段被正确索引。
+        新的索引名称为 `case` 加上当前时间戳。
+        """
+        if not index_name:
+            index_name = f'{self.index_prefix}case{generate_timestamp()}'
+
+        # 设置索引映射以指定数据类型
+        body = {
+            "mappings": {
+                "properties": {
+                    "o_text": {"type": "text"},  # 原始文本
+                    'labels': {"type": "keyword"},  # 类别
+                    'filepath': {"type": "text"},  # 文件路径
+                    'text_embeddings': {
+                        "type": "nested",
+                        "properties": {
+                            "embedding": {"type": "dense_vector", "dims": 1792, "similarity": "cosine"}
+                        }
+                    },
+                    'summary': {"type": "text"},  # 摘要
+                    'summary_embeddings': {
+                        "type": "nested",
+                        "properties": {
+                            "embedding": {"type": "dense_vector", "dims": 1792, "similarity": "cosine"}
+                        }
+                    }
+                }
+            }}
+
+        self._load_data(data_file_path, body, index_name, pre_process_case)
+
     def search_with_labels(self,
                            index_name: str,
                            query: str,
                            match_fields: list,
                            labels: list,
                            embedding=None,
-                           top_k=10):
+                           top_k=10,
+                           embedding_field: Union[str, List[str]] = "embedding"):
         """
         在指定的索引中搜索具有指定标签的文档，并返回最相关的文档。
         :param index_name: 索引名称
@@ -104,27 +136,43 @@ class LawDatabase:
         # 执行match查询
         match_results = self.es.search(index=index_name, body=match_query)
 
-        # 第二步：如果提供了embedding，使用kNN查询和labels过滤器
+        # 第二步：如果提供了embedding，使用kNN查询
         if embedding is not None:
+            if isinstance(embedding_field, str):
+                mast_query.append({
+                    "knn": {
+                        "field": embedding_field,
+                        "query_vector": embedding
+
+                    }
+                })
+            else:
+                assert isinstance(embedding_field, list)
+                # 在多个embedding_fields里用nested搜索，采用“或”关系
+                nested_queries = [{
+                    "nested": {
+                        "path": field,
+                        "query": {
+                            "knn": {
+                                "field": f"{field}.embedding",
+                                "query_vector": embedding,
+                            }
+                        },
+                        "inner_hits": {}
+                    }
+                } for field in embedding_field]
+
+                # 将所有nested查询包装在一个bool查询的'should'部分
+                mast_query.append({
+                    "bool": {
+                        "should": nested_queries
+                    }
+                })
+
             knn_query = {
                 "query": {
                     "bool": {
-                        "must": [
-                                    {
-                                        "nested": {
-                                            "path": "embeddings",
-                                            "query": {
-                                                "knn": {
-                                                    "embeddings.embedding": {
-                                                        "vector": embedding,
-                                                        "k": top_k
-                                                    }
-                                                }
-                                            },
-                                            "inner_hits": {}
-                                        }
-                                    }
-                                ] + mast_query
+                        "must": mast_query  # 这里直接使用mast_query，因为它现在可能包含一个带有'should'的bool查询
                     }
                 }
             }
@@ -136,7 +184,7 @@ class LawDatabase:
 
         return match_results["hits"]["hits"]
 
-    def _load_data(self, file_path, body, index_name):
+    def _load_data(self, file_path, body, index_name, pre_process=None):
         if not self.es.indices.exists(index=index_name):
             self.es.indices.create(index=index_name, body=body)
 
@@ -145,11 +193,12 @@ class LawDatabase:
             with open(file_path, 'r') as file:
                 for line in tqdm(file, desc="Upload"):
                     data = json.loads(line)
+                    if pre_process:
+                        data = pre_process(data)
                     t = {
                         "_index": index_name,
                         "_source": data
                     }
-                    print(json.dumps(t, ensure_ascii=False))
                     yield t
                     break
 
@@ -167,6 +216,7 @@ class LawDatabase:
                     labels: list,
                     embedding=None,
                     top_k=5):
+        labels = check_labels(labels)
         result = self.search_with_labels(
             self.law_index,
             query,
@@ -177,33 +227,59 @@ class LawDatabase:
         )
         return result
 
+    def search_cases(self,
+                     query: str,
+                     labels: list,
+                     embedding=None,
+                     top_k=5):
+        labels = check_labels(labels, only_tags=True)
+        return self.search_with_labels(
+            self.case_index,
+            query,
+            ["o_text", "summary"],
+            labels,
+            embedding,
+            top_k,
+            ["text_embeddings", "summary_embeddings"]
+        )
 
-def calculate_rrf_score(results, rank):
-    """计算每个文档的RRF分数"""
-    rrf_scores = {}
-    for hit in results:
-        doc_id = hit["_id"]
-        if doc_id not in rrf_scores:
-            rrf_scores[doc_id] = 0
-        if rank > 0:
-            rrf_scores[doc_id] += 1 / rank
-        rank += 1
-    return rrf_scores
+
+def pre_process_case(data):
+    new_labels = []
+    for _ in data["use_labels"]:
+        if _ := valid_label_match(_):
+            new_labels.append(_)
+    data["labels"] = new_labels
+    data.pop("use_labels")
+    data['summary_embeddings'] = [{"embedding": _} for _ in data['summary_embeddings']]
+    data['text_embeddings'] = [{"embedding": _} for _ in data['text_embeddings']]
+    return data
 
 
 def merge_and_rank(match_results, knn_results, top_k):
+    rrf_scores = {}
+    results = {}
+    K = 60
+
+    def calculate_rrf_score(hhits):
+        """计算每个文档的RRF分数"""
+
+        for rank, hit in enumerate(hhits):
+            rank = rank + 1
+            _doc_id = hit["_id"]
+            if _doc_id not in rrf_scores:
+                rrf_scores[_doc_id] = 0
+            if rank > 0:
+                rrf_scores[_doc_id] += 1 / (rank + K)
+            results[_doc_id] = hit
+
     # 计算两个结果集的RRF分数
-    match_rrf_scores = calculate_rrf_score(match_results, 1)
-    knn_rrf_scores = calculate_rrf_score(knn_results, 1)
+    calculate_rrf_score(match_results)
+    calculate_rrf_score(knn_results)
 
-    # 合并结果并计算总分
-    merged_results = []
-    for doc_id, score in match_rrf_scores.items():
-        total_score = score + knn_rrf_scores.get(doc_id, 0)
-        merged_results.append({"_id": doc_id, "score": total_score})
-
+    merged_results = [{"_id": _id, "score": rrf_scores[_id]} for _id in rrf_scores.keys()]
     # 根据总分排序
     sorted_results = sorted(merged_results, key=lambda x: x["score"], reverse=True)
 
     # 返回前top_k个结果
-    return [result["_id"] for result in sorted_results[:top_k]]
+    return [results[result["_id"]] for result in sorted_results[:top_k]]

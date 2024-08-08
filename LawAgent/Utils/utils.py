@@ -9,6 +9,8 @@ import json5
 import json
 import re
 import ast
+from .constant import *
+import editdistance
 
 __all__ = [
     'generate_timestamp',
@@ -18,7 +20,13 @@ __all__ = [
     'llm_response2json',
     'dir_txt2jsonl',
     'build_username',
-    'unique_with_order_list_comprehension'
+    'unique_with_order_list_comprehension',
+    'VALID_TAGS',
+    'LAW_NAMES',
+    'valid_label_match',
+    'law_name_match',
+    'find_nearest_text',
+    'check_labels'
 ]
 
 
@@ -185,6 +193,50 @@ def llm_response2json(text: str):
 
 def build_username():
     return os.getenv("USERNAME", f"{get_public_ip()}-{'-'.join(get_computer_name_and_username())}")
+
+
+def find_nearest_text(text_list: list, query, threshold=1):
+    min_distance = 1
+    _result = None
+    for _ in text_list:
+        distance = editdistance.eval(query, _) / max(len(query), len(_))
+        if distance < min_distance:
+            min_distance = distance
+            _result = _
+    if min_distance < threshold:
+        return _result
+    return None
+
+
+def check_labels(labels: list, only_tags: bool = False):
+    index_pattern = r"([第][一二三四五六七八九十百千万亿0-9]+[章节篇款条编项])"
+    title_pattern = r"(中国[\u4e00-\u9fa5]+法|中华人民共和国[\u4e00-\u9fa5]+法|[\u4e00-\u9fa5]+法)"
+    labels = list(set(labels))
+    for i, label in enumerate(labels):
+        if not only_tags and (re.match(index_pattern, label) or re.match(title_pattern, label)):
+            continue
+        label = valid_label_match(label)
+        labels[i] = label
+    labels = list(set(labels))
+    try:
+        labels.remove(None)
+    except ValueError:
+        pass
+    return labels
+
+
+def law_name_match(query):
+    pattern = r'(?:中[\u4e00-\u9fa5]?国)?([\u4e00-\u9fa5]+)法'
+    new_law_list = [re.match(pattern, _).group(1) for _ in LAW_NAMES]
+
+    if res := re.match(pattern, query):
+        res.group(1)
+        return find_nearest_text(new_law_list, res.group(1), threshold=0.5)
+    return None
+
+
+def valid_label_match(query):
+    return find_nearest_text(VALID_TAGS, query, threshold=0.5)
 
 
 def unique_with_order_list_comprehension(lst):
