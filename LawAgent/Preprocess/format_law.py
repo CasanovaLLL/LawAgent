@@ -60,7 +60,7 @@ def parse_law(data: dict):
             if isinstance(v, dict):
                 _dfs(v, labels)
             else:
-                newv = _parse_article_text(v)
+                newv = _parse_article_text_v2(v)
                 if len(newv) > 0:
                     _dfs(newv, labels)
                     continue
@@ -109,6 +109,34 @@ def _parse_article_text(text: str):
         value = text[start_index:end_index].strip()
         if len(value) > 0 and key:
             result[key] = _parse_clause_text(value)
+        key = new_key
+        start_index = match.end()  # 更新下一个值的开始位置
+
+    # 添加最后一个值
+    last_value = text[start_index:].strip()
+    if last_value and key:
+        result[key] = last_value
+    return result
+
+def _parse_article_text_v2(text: str):
+    """
+    条
+    :param text:
+    :return:
+    """
+    pattern = r"\s+(第[一二三四五六七八九十百千万亿]+条)\s+"
+    matches = re.finditer(pattern, text)
+
+    result = {}
+    start_index = 0
+    key = None
+    for match in matches:
+        new_key = match.group(1).strip()
+        end_index = match.start()  # 当前键的开始位置即前一个值的结束位置
+
+        value = text[start_index:end_index].strip()
+        if len(value) > 0 and key:
+            result[key] = value
         key = new_key
         start_index = match.end()  # 更新下一个值的开始位置
 

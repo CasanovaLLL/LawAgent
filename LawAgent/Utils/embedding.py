@@ -2,7 +2,7 @@ import os
 from sentence_transformers import SentenceTransformer
 import torch
 
-__all__ = ["encode_long_text", 'embedding_model']
+__all__ = ["encode_long_text"]
 device = "cuda" if torch.cuda.is_available() else "cpu"
 MODEL_PATH = os.getenv("MODEL_PATH", "infgrad/stella-large-zh-v3-1792d")
 WINDOWS_SIZE = int(os.getenv("EMBEDDING_WINDOW_SIZE", "512"))

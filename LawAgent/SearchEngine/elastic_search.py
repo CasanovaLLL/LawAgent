@@ -200,11 +200,10 @@ class LawDatabase:
                         "_source": data
                     }
                     yield t
-                    break
 
         try:
             # 使用helpers.bulk进行批量导入
-            success, _ = helpers.bulk(self.es, data_generator())
+            success, _ = helpers.bulk(self.es, data_generator(), request_timeout=100)
             print(f'Successfully loaded {success} documents.')
         except helpers.BulkIndexError as e:
             print(f"Failed to load {len(e.errors)} documents.")

@@ -40,7 +40,7 @@ class LawSearchRequest(BaseModel):
 
 
 @app.post("/search_laws")
-async def search_laws(request: LawSearchRequest):
+def search_laws(request: LawSearchRequest):
     embedding = None
     if request.need_embedding:
         from LawAgent.Utils.embedding import embedding_model
