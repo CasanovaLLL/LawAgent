@@ -1,60 +1,17 @@
-# Law Agent
+安装方法
+```
+conda create -n lawagent python=3.10
+conda activate lawagent
+pip install -e .
+```
 
-## 检索场景
+配置环境变量
 
-### 重写Query
+```
+python ./scripts/load_data2es.py
+```
 
-专家知识
-
-- 分类法
-- 规范化事件表述
-
-### 数据库
-
-**数据预处理**
-
-案件摘要生成
+使用 document-write 可使用文书编写
 
 
-案件 $\leftrightarrow$ 法条 双向映射关系构建
-
-**检索方法**
-
-- Embedding 
-- BM25
-
-多路召回
-
-**Reranker**
-
-用BGE模型？ 数据采用LeCaRDv2微调
-
-### 系统提供接口
-
-一句话 $\rarr $ 类案、教材、法条 的检索
-
-类案 $\lrarr $ 法条  $\lrarr $ 教材  单条数据之间可以构建索引
-
-## 文书生成场景
-
-检索模板
-
-检索参考数据
-
-通过CoT分段编写。COT部分涉及：推理、检索、编写
-
-推理流程的一个样例：
-
-判断事件A是否符合公序良俗
-
-重写Query $\rarr $ `["判断事件A是否符合公序良俗","公序良俗是什么","公序良俗的定义","事件A"]` $\substack{检索\\ \rarr} $   `[相关案例, 相关法条, 相关教材]` $\rarr $ 推理CoT或ToT $\rarr $ 推理结果
-
-一个CoT的样例
-
-检索出若干个数据包括X案例、法条、教材
-
-"X案例是否与公序良俗有关"$\rarr $ "A与X的在公序良俗问题上的相关性如何"$\rarr $ 判断事件A是否符合公序良俗 $\rarr $ 结果
-
-"X法条、教材与公序良俗是否有关" $\rarr $ "A是否符合X法条、教材中的表述"$\rarr $ 判断事件A是否符合公序良俗 $\rarr $ 结果
-
-**引号中的数据应该由模型生成**
+start-server 为DIFY提供后端服务
