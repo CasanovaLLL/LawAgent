@@ -9,6 +9,7 @@ import json
 from tqdm import tqdm
 from typing import Union, List
 from LawAgent.Utils import valid_label_match, check_labels
+from LawAgent.Utils import SingletonMeta
 
 try:
     _context = ssl.create_default_context(cafile=os.environ.get('ELASTICSEARCH_CA_PATH', 'http_ca.crt'))
@@ -16,18 +17,31 @@ except FileNotFoundError:
     pass
 
 
-class LawDatabase:
+def _pure_return(func):
+    def wrapper(*args, **kwargs):
+        return [_["_source"] for _ in func(*args, **kwargs)]
+
+    return wrapper
+
+
+class LawDatabase(metaclass=SingletonMeta):
     r"""
     所有的数据都应该包含两个字段：
     labels : list[str] 一个keyword 列表用来做筛选器
     embeddings: 密集向量列表 用来做相似度检索
     """
 
-    def __init__(self, host=os.environ.get("ES_HOST", "localhost"), port=int(os.environ.get("ES_PORT", 9200))):
+    def __init__(self,
+                 host=os.environ.get("ES_HOST", "localhost"),
+                 port=int(os.environ.get("ES_PORT", 9200)),
+                 search_with_embedding=True):
         auth = dict()
+        self.search_with_embedding = search_with_embedding
         self.index_prefix = "lawagent-"
         self.law_index = os.environ.get("LAW_INDEX", "lawagent-law")
         self.case_index = os.environ.get("CASE_INDEX", "lawagent-case")
+
+        self.relevant_market_index = os.environ.get("RELEVANT_INDEX", "lawagent-relevant")
         try:
             auth['api_key'] = os.environ['ELASTICSEARCH_API_KEY']
         except KeyError:
@@ -42,6 +56,19 @@ class LawDatabase:
                                 ssl_show_warn=False,
                                 **auth
                                 )
+        if search_with_embedding:
+            from sentence_transformers import SentenceTransformer
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            self.stella_embedding = SentenceTransformer(os.getenv("STELLA_MODEL_PATH",
+                                                                  "infgrad/stella-large-zh-v3-1792d"),
+                                                        device=device,
+                                                        trust_remote_code=True)
+            self.bge_m3 = SentenceTransformer(os.getenv("BGE_M3_PATH",
+                                                        "BAAI/bge-m3"),
+                                              device=device,
+                                              trust_remote_code=True)
 
     def load_code(self, data_file_path, index_name=None):
         """
@@ -98,6 +125,23 @@ class LawDatabase:
 
         self._load_data(data_file_path, body, index_name, pre_process_case)
 
+    def load_relevant_market(self, data_file_path, index_name=None):
+        """
+        数据加载到Elasticsearch中，并确保所有字段被正确索引。
+        新的索引名称为 `relevant_market` 加上当前时间戳。嵌入模型为 BGE_M3
+        """
+        if not index_name:
+            index_name = f'{self.index_prefix}relevant_market{generate_timestamp()}'
+        body = {
+            "mappings": {
+                "properties": {
+                    "embedding": {"type": "dense_vector", "dims": 1024, "similarity": "cosine"}
+                }
+            }
+        }
+        self._load_data(data_file_path, body, index_name)
+
+    @_pure_return
     def search_with_labels(self,
                            index_name: str,
                            query: str,
@@ -114,6 +158,7 @@ class LawDatabase:
         :param labels: 标签列表
         :param embedding: 向量用于kNN查询
         :param top_k: 返回的文档数量
+        :param embedding_field: 用来匹配向量的字段
         :return: 文档列表
         """
         mast_query = [{"term": {"labels": label}} for label in labels]
@@ -132,7 +177,7 @@ class LawDatabase:
                 }
             }
         }
-        print(json.dumps(match_query, ensure_ascii=False))
+        # print(json.dumps(match_query, ensure_ascii=False))
         # 执行match查询
         match_results = self.es.search(index=index_name, body=match_query)
 
@@ -213,13 +258,18 @@ class LawDatabase:
     def search_laws(self,
                     query: str,
                     labels: list,
-                    embedding=None,
                     top_k=5):
-        labels = check_labels(labels)
+        new_labels = check_labels(labels)
+        if len(new_labels) == len(labels) and all(label in new_labels for label in labels):
+            labels = new_labels
+        else:
+            labels = []
+            query = '-'.join(labels) + ' ' + query
+        embedding = self.stella_embedding.encode(query).tolist() if self.search_with_embedding else None
         result = self.search_with_labels(
             self.law_index,
             query,
-            ["depth", "code"],
+            ["labels", "depth", "code"],
             labels,
             embedding,
             top_k
@@ -229,9 +279,10 @@ class LawDatabase:
     def search_cases(self,
                      query: str,
                      labels: list,
-                     embedding=None,
                      top_k=5):
         labels = check_labels(labels, only_tags=True)
+        embedding = self.stella_embedding.encode(query).tolist() if self.search_with_embedding else None
+
         return self.search_with_labels(
             self.case_index,
             query,
@@ -240,6 +291,22 @@ class LawDatabase:
             embedding,
             top_k,
             ["text_embeddings", "summary_embeddings"]
+        )
+
+    def search_relevant_market(self,
+                               query: str,
+                               top_k=5):
+        embedding = self.bge_m3.encode(query).tolist() if self.search_with_embedding else None
+
+        return self.search_with_labels(
+            self.relevant_market_index,
+            query,
+            ["Case title", "Regulation",
+             "Last decision date", "相关市场",
+             "案件名称"],
+            [],
+            embedding,
+            top_k
         )
 
 
@@ -282,3 +349,8 @@ def merge_and_rank(match_results, knn_results, top_k):
 
     # 返回前top_k个结果
     return [results[result["_id"]] for result in sorted_results[:top_k]]
+
+
+if __name__ == '__main__':
+    es = LawDatabase()
+    print(es.search_cases("公司", []))

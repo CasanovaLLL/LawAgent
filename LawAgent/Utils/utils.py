@@ -26,7 +26,8 @@ __all__ = [
     'valid_label_match',
     'law_name_match',
     'find_nearest_text',
-    'check_labels'
+    'check_labels',
+    'SingletonMeta'
 ]
 
 
@@ -242,3 +243,16 @@ def valid_label_match(query):
 def unique_with_order_list_comprehension(lst):
     seen = set()
     return [x for x in lst if not (x in seen or seen.add(x))]
+
+
+class SingletonMeta(type):
+    """
+    元类实现单例模式
+    """
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            instance = super().__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return cls._instances[cls]

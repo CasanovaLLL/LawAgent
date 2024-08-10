@@ -13,7 +13,7 @@ requirements = [req for req in requirements if req and not req.startswith("#")]
 # 设置项目信息
 setup(
     name="LawAgent",
-    version="0.0.1",
+    version="0.0.9",
     author="Lyx",
     description="A Law Agent for Antimonopoly Law",
     long_description=long_description,
@@ -24,6 +24,7 @@ setup(
     entry_points={
         "console_scripts": [
             "start-server=LawAgent.ToolServer.server:main",
+            'document-write=LawAgent.Agents.document_generate_team:app_gui'
         ]
     },
     install_requires=requirements,

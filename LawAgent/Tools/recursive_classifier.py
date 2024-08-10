@@ -13,12 +13,12 @@ from LawAgent.Utils import build_username
 from tqdm import tqdm
 
 
-@register_tool('recursive_classifier')
+@register_tool('cause_classifier')
 class RecursiveClassifier(BaseTool):
-    name = 'recursive_classifier'
+    name = 'cause_classifier'
     description = '一个案由分类器，把一个事件分到某一个案由'
     parameters = [{
-        'name': 'prompt',
+        'name': 'query',
         'type': 'string',
         'description':
             '需要分类的文本',
@@ -35,7 +35,7 @@ class RecursiveClassifier(BaseTool):
     def call(self, params: Union[str, dict], **kwargs) -> Union[str, list, dict]:
         if isinstance(params, str):
             params = json5.loads(params)
-        prompt = params['prompt']
+        prompt = params['query']
         return self.classify(prompt, self.tree["root"])
 
     def classify(self, prompt: str, node: dict) -> str:

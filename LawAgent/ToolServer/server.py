@@ -1,14 +1,12 @@
 import os
 
 from fastapi import FastAPI
-from LawAgent.SearchEngine.elastic_search import LawDatabase
 from pydantic import BaseModel
 from typing import List, Literal
 import uvicorn
-from LawAgent.Tools.recursive_classifier import RecursiveClassifier
+from LawAgent.Tools import CaseSearch, LawSearch, RelevantMarketSearch, PatternSearch, RecursiveClassifier
 
 app = FastAPI()
-db = LawDatabase()
 
 
 class TextClassifierRequest(BaseModel):
@@ -18,7 +16,6 @@ class TextClassifierRequest(BaseModel):
 
 @app.post("/classifier")
 async def call_classifier(request: TextClassifierRequest):
-    print("Classify Target", request.text)
     if request.classifier_name == "General":
         classifier = RecursiveClassifier(
             tree_path=os.environ.get("GENERAL_CLASSIFIER_TREE_PATH",
@@ -32,32 +29,29 @@ async def call_classifier(request: TextClassifierRequest):
     }
 
 
-class LawSearchRequest(BaseModel):
+class SearchRequest(BaseModel):
     query: str
-    labels: List[str]
-    need_embedding: bool = False
-    top_k: int = 5
+    labels: List[str] = []
 
 
 @app.post("/search_laws")
-def search_laws(request: LawSearchRequest):
-    embedding = None
-    if request.need_embedding:
-        from LawAgent.Utils.embedding import embedding_model
-        embedding = embedding_model().encode(request.query)
-    data = db.search_laws(request.query, request.labels, embedding, request.top_k)
-    result = []
-    if data:
-        for ele in data:
-            try:
-                ele = ele["_source"]
-                result.append(f"""
-                {ele["depth"]}:{ele["code"]}
-                """.strip())
-            except KeyError:
-                pass
+def search_laws(request: SearchRequest):
     return {
-        "laws": result
+        "laws": LawSearch().search(request.query, request.labels, True)
+    }
+
+
+@app.post("/search_case")
+def search_case(request: SearchRequest):
+    return {
+        "case": CaseSearch().search(request.query, request.labels, True)
+    }
+
+
+@app.post("/relevant_market_case")
+def search_relevant_market(request: SearchRequest):
+    return {
+        "case": RelevantMarketSearch().search(request.query, True)
     }
 
 
