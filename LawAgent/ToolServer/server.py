@@ -25,7 +25,7 @@ async def call_classifier(request: TextClassifierRequest):
             tree_path=os.environ.get("MONOPOLY_CLASSIFIER_TREE_PATH",
                                      "data/preprocessed_data/monopoly_classifier_tree.json"))
     return {
-        "class": classifier.call({"prompt": request.text})
+        "class": classifier.call({"query": request.text})
     }
 
 

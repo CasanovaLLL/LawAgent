@@ -38,7 +38,7 @@ class LawDatabase(metaclass=SingletonMeta):
         auth = dict()
         self.search_with_embedding = search_with_embedding
         self.index_prefix = "lawagent-"
-        self.law_index = os.environ.get("LAW_INDEX", "lawagent-law")
+        self.law_index = os.environ.get("LAW_INDEX", "lawagent-code")
         self.case_index = os.environ.get("CASE_INDEX", "lawagent-case")
 
         self.relevant_market_index = os.environ.get("RELEVANT_INDEX", "lawagent-relevant")

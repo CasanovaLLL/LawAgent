@@ -60,7 +60,7 @@ CFGS = {
             'description': '审查文书是否符合最新的反垄断法民事诉讼司法解释。',
             'instructions': '你负责审查并确认文书符合最新司法解释。',
             'knowledge_files': [],
-            'selected_tools': []
+            'selected_tools': [LawSearch()]
         }
     ]
 }

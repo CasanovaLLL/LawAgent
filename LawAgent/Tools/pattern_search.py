@@ -42,9 +42,10 @@ class PatternSearch(BaseTool):
 
     def search(self, query):
         target = find_nearest_text(available_pattern_name, query)
-
-        return PATTERNS[target]
-
+        try:
+            return PATTERNS[target]
+        except:
+            KeyError(f"应该从{available_pattern_name} 选一个查看")
 
 if __name__ == '__main__':
     print(PatternSearch().search("公司诉讼公司"))
