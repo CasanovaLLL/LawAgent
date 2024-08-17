@@ -68,7 +68,7 @@ CFGS = {
 
 def app_tui():
     # Define a group chat agent from the CFGS
-    bot = GroupChat(agents=CFGS, llm=llm_cfg)
+    bot = GroupChat(agents=CFGS, llm=llm_cfg, agent_selection_method="round_robin")
     # Chat
     messages = []
     while True:
