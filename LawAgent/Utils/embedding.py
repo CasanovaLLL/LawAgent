@@ -1,12 +1,19 @@
 import os
 from sentence_transformers import SentenceTransformer
+import requests
 import torch
+from typing import Union, List
 
-__all__ = ["encode_long_text"]
-device = "cuda" if torch.cuda.is_available() else "cpu"
-MODEL_PATH = os.getenv("MODEL_PATH", "infgrad/stella-large-zh-v3-1792d")
-WINDOWS_SIZE = int(os.getenv("EMBEDDING_WINDOW_SIZE", "512"))
-embedding_model = SentenceTransformer(MODEL_PATH, device=device, trust_remote_code=True)
+__all__ = ["encode_long_text", 'get_embedding_model']
+EMBEDDING_URL = os.getenv("EMBEDDING_URL", None)
+
+
+def get_embedding_model(model_name: str):
+    if EMBEDDING_URL:
+        print("使用在线Embedding服务")
+        return OnlineEmbedding(model_name.split('/')[-1])
+    return SentenceTransformer(model_name, device="cuda" if torch.cuda.is_available() else "cpu",
+                               trust_remote_code=True)
 
 
 def encode_long_text(sentence: str):
@@ -43,6 +50,36 @@ def encode_long_text(sentence: str):
     with torch.cuda.stream(stream):
         return embedding_model.encode(target_string).tolist()
 
+
+class OnlineEmbedding:
+    def __init__(self, model_name="stella-large-zh-v3-1792d", base_url=EMBEDDING_URL):
+        self.model = model_name
+        self.base_url = base_url
+
+    def encode(self, text: Union[str, List[str]]):
+        response = requests.post(
+            url=self.base_url,
+            json={
+                "model": self.model,
+                "input": text
+            }
+        )
+        response.raise_for_status()
+        data = response.json()['data']
+        data = sorted(data, key=lambda x: x["index"])
+        embeddings = [_["embedding"] for _ in data]
+        if isinstance(text, str):
+            return embeddings[0]
+        return embeddings
+
+
+WINDOWS_SIZE = int(os.getenv("EMBEDDING_WINDOW_SIZE", "512"))
+if not EMBEDDING_URL:
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    MODEL_PATH = os.getenv("STELLA_MODEL_PATH", "infgrad/stella-large-zh-v3-1792d")
+    embedding_model = SentenceTransformer(MODEL_PATH, device=device, trust_remote_code=True)
+else:
+    embedding_model = OnlineEmbedding()
 
 if __name__ == '__main__':
     import json

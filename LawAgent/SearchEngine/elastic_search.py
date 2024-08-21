@@ -57,18 +57,14 @@ class LawDatabase(metaclass=SingletonMeta):
                                 **auth
                                 )
         if search_with_embedding:
-            from sentence_transformers import SentenceTransformer
+            from LawAgent.Utils.embedding import get_embedding_model
             import torch
             device = "cuda" if torch.cuda.is_available() else "cpu"
 
-            self.stella_embedding = SentenceTransformer(os.getenv("STELLA_MODEL_PATH",
-                                                                  "infgrad/stella-large-zh-v3-1792d"),
-                                                        device=device,
-                                                        trust_remote_code=True)
-            self.bge_m3 = SentenceTransformer(os.getenv("BGE_M3_PATH",
-                                                        "BAAI/bge-m3"),
-                                              device=device,
-                                              trust_remote_code=True)
+            self.stella_embedding = get_embedding_model(os.getenv("STELLA_MODEL_PATH",
+                                                                  "infgrad/stella-large-zh-v3-1792d"))
+            self.bge_m3 = get_embedding_model(os.getenv("BGE_M3_PATH",
+                                                        "BAAI/bge-m3"))
 
     def load_code(self, data_file_path, index_name=None):
         """
@@ -265,7 +261,9 @@ class LawDatabase(metaclass=SingletonMeta):
         else:
             labels = []
             query = '-'.join(labels) + ' ' + query
-        embedding = self.stella_embedding.encode(query).tolist() if self.search_with_embedding else None
+        embedding = self.stella_embedding.encode(query) if self.search_with_embedding else None
+        if embedding and not isinstance(embedding, list):
+            embedding = embedding.tolist()
         result = self.search_with_labels(
             self.law_index,
             query,
@@ -281,8 +279,9 @@ class LawDatabase(metaclass=SingletonMeta):
                      labels: list,
                      top_k=5):
         labels = check_labels(labels, only_tags=True)
-        embedding = self.stella_embedding.encode(query).tolist() if self.search_with_embedding else None
-
+        embedding = self.stella_embedding.encode(query) if self.search_with_embedding else None
+        if embedding and not isinstance(embedding, list):
+            embedding = embedding.tolist()
         return self.search_with_labels(
             self.case_index,
             query,
@@ -296,8 +295,9 @@ class LawDatabase(metaclass=SingletonMeta):
     def search_relevant_market(self,
                                query: str,
                                top_k=5):
-        embedding = self.bge_m3.encode(query).tolist() if self.search_with_embedding else None
-
+        embedding = self.bge_m3.encode(query) if self.search_with_embedding else None
+        if embedding and not isinstance(embedding, list):
+            embedding = embedding.tolist()
         return self.search_with_labels(
             self.relevant_market_index,
             query,

@@ -82,7 +82,7 @@ def app_tui():
 
 def app_gui():
     # Define a group chat agent from the CFGS
-    bot = GroupChat(agents=CFGS, llm=llm_cfg)
+    bot = GroupChat(agents=CFGS, llm=llm_cfg, agent_selection_method="round_robin")
     chatbot_config = {
         'user.name': '咨询者',
         'prompt.suggestions': [
