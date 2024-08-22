@@ -9,6 +9,8 @@ import json5
 import json
 import re
 import ast
+from urllib.parse import urlencode, urlsplit, urlunsplit
+
 from .constant import *
 import editdistance
 
@@ -27,7 +29,9 @@ __all__ = [
     'law_name_match',
     'find_nearest_text',
     'check_labels',
-    'SingletonMeta'
+    'SingletonMeta',
+    'url_add_params',
+    'get_avatar'
 ]
 
 
@@ -256,3 +260,30 @@ class SingletonMeta(type):
             instance = super().__call__(*args, **kwargs)
             cls._instances[cls] = instance
         return cls._instances[cls]
+
+
+def url_add_params(url, **kwargs):
+    # 将URL分解为组件
+    scheme, netloc, path, query, fragment = urlsplit(url)
+
+    # 将现有的查询参数与新的关键字参数合并
+    # 如果URL中已经有查询参数，需要先解析它们
+    query_params = {}
+    if query:
+        query_params = dict(qc.split('=') for qc in query.split('&'))
+
+    # 更新查询参数字典
+    query_params.update(kwargs)
+
+    # 对查询参数进行编码
+    new_query = urlencode(query_params)
+
+    # 重新组合URL
+    new_url = urlunsplit((scheme, netloc, path, new_query, fragment))
+
+    return new_url
+
+
+def get_avatar(index):
+    avatar_path = os.getenv("AVATAR_PATH", "./data/avatar")
+    return os.path.join(avatar_path, f"{index}.jpg")

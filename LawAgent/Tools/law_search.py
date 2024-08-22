@@ -13,17 +13,8 @@ class LawSearch(BaseTool):
             'name': 'query',
             'type': 'string',
             'description':
-                '需要查询的法律内容',
+                '字符串描述需要查询的法律内容',
             'required': True
-        },
-        {
-            'name': 'labels',
-            'type': 'list[str]',
-            'description':
-                '一组法律名称或条数，用来精确匹配，名称与编号应该分开，编号应该采用小写中文。'
-                '若设置了这一项一次只能查出一条对应法律'
-                '\n例如 ["中华人民共和国反垄断法", "第二十条"]',
-            'required': False
         }
     ]
     top_K = 20
@@ -32,7 +23,7 @@ class LawSearch(BaseTool):
     def call(self, params: Union[str, dict], **kwargs) -> Union[str, list, dict]:
         if isinstance(params, str):
             params = json5.loads(params)
-        query = params['query']
+        query = str(params['query'])
         labels = params.get('labels', [])
         if not isinstance(labels, list):
             labels = [str(labels)]

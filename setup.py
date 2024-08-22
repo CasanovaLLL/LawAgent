@@ -23,8 +23,8 @@ setup(
     python_requires='>=3.10',  # 指定Python兼容版本
     entry_points={
         "console_scripts": [
-            "start-server=LawAgent.ToolServer.server:main",
-            'document-write=LawAgent.Agents.document_generate_team:app_gui'
+            "start-dify-server=LawAgent.ToolServer.server:main",
+            'document-write=LawAgent.gui.server:start_web_ui'
         ]
     },
     install_requires=requirements,
