@@ -11,15 +11,16 @@ from LawAgent.Agents.document_generate_team import build_agent
 
 app = FastAPI()
 
-gui = MyWebUI.run(build_agent)
-app = gr.mount_gradio_app(app, gui, path="/ui")
-
 
 @app.get("/file")
 async def download_file(name: str):
     if not name.startswith(work_dir) or not os.path.isfile(name):
         return HTTPException(status_code=400, detail="文件路径错误")
     return FileResponse(name)
+
+
+gui = MyWebUI.run(build_agent)
+app = gr.mount_gradio_app(app, gui, path="/")
 
 
 def start_web_ui():
