@@ -143,6 +143,8 @@ class MyWebUI:
                   messages,
                   state
                   ):
+            if not _input or _input.strip() == "":
+                raise gr.Error("喜欢不输东西是吧，刷新网页去吧！")
             if state is None:
                 semaphore = Semaphore(0)
 
