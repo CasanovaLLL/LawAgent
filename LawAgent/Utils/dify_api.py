@@ -10,7 +10,7 @@ class DifyAPI:
         self.api_url = api_url or os.getenv("DIFY_BASE_URL")
         self.conversation_id = None
 
-    def conversation(self, query: str):
+    def conversation(self, query: str, inputs: dict = None):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.api_key}'
@@ -18,7 +18,7 @@ class DifyAPI:
 
         # 完整的请求体
         body = {
-            "inputs": {},
+            "inputs": inputs or dict(),
             "query": query,
             "response_mode": "streaming",
             "user": "abc-123",
