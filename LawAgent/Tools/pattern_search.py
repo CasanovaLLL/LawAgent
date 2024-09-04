@@ -42,7 +42,7 @@ class PatternSearch(BaseTool):
         query = params['query']
         datas = self.search(query)
         if self.notepad:
-            self.notepad.call({"文书模板": datas})
+            self.notepad.call({"operation_type": "update", "data": {"文书模板": datas}})
             return f'已成功把{query}的模板加入到记事本中'
         else:
             return datas
