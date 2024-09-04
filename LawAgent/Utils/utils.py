@@ -31,7 +31,8 @@ __all__ = [
     'check_labels',
     'SingletonMeta',
     'url_add_params',
-    'get_avatar'
+    'get_avatar',
+    'sanitize_filename'
 ]
 
 
@@ -287,3 +288,21 @@ def url_add_params(url, **kwargs):
 def get_avatar(index):
     avatar_path = os.getenv("AVATAR_PATH", "./data/avatar")
     return os.path.join(avatar_path, f"{index}.jpg")
+
+
+def sanitize_filename(filename):
+    # 移除非法字符
+    sanitized = re.sub(r'[\\/*?:"<>|]', '', filename)  # 移除 Windows 不允许的字符
+    sanitized = re.sub(r'[/:]', '', sanitized)  # 移除 Unix 不允许的字符
+
+    # 替换特殊字符
+    sanitized = re.sub(r'[ ,!@#$%^&+=]', '_', sanitized)  # 替换其他特殊字符为下划线
+
+    # 去除前导和尾随空白
+    sanitized = sanitized.strip()
+
+    # 限制长度
+    max_length = 255  # 一般操作系统允许的最大文件名长度
+    sanitized = sanitized[:max_length]
+
+    return sanitized

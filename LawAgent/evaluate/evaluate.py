@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from LawAgent.Utils.embedding import get_embedding_model
+from LawAgent.Utils.utils import sanitize_filename
 
 SIMILARITY_MODEL = "bge-m3"
 _model = get_embedding_model(SIMILARITY_MODEL)
@@ -30,12 +31,14 @@ class EvaluateDataset:
         print("load evaluate data done")
 
     def evaluate(self, llm_generate_func, llm_name: str):
+        llm_name = sanitize_filename(llm_name)
         print("start evaluate")
+        os.makedirs("data/evaluate/llmOutput/", exist_ok=True)
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = []
             for q in self.data["Q"].tolist():
                 futures.append(executor.submit(llm_generate_func, q))
-            llm_response = [future.result() for future in futures]
+            llm_response = [future.result() for future in tqdm(futures, desc=f"Get `{llm_name}` Response")]
             store_pd = pd.DataFrame({llm_name: llm_response})
             store_pd.to_csv(f"data/evaluate/llmOutput/{llm_name}.csv", index=False)
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -67,5 +70,5 @@ if __name__ == '__main__':
     evaluate_dataset = EvaluateDataset('data/evaluate/反垄断QA20.xlsx')
     from LawAgent.evaluate.generate_data import generate_dify_data, generate_oai_data
 
-    evaluate_dataset.evaluate(generate_dify_data, "dify")
-    evaluate_dataset.evaluate(generate_oai_data("glm4-chat"), "glm4-chat")
+    # evaluate_dataset.evaluate(generate_dify_data, "dify")
+    evaluate_dataset.evaluate(generate_oai_data("meta-llama/Meta-Llama-3.1-405B-Instruct"), "meta-llama/Meta-Llama-3.1-405B-Instruct")

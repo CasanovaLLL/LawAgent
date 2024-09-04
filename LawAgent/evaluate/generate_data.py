@@ -10,16 +10,16 @@ def generate_dify_data(query):
 
 def generate_oai_data(model_name: str):
     def _gen(query):
-        client = openai.OpenAI(api_key=os.getenv(f"{model_name.upper()}_API_KEY"),
-                               base_url=os.getenv(f"{model_name.upper()}_API_URL"))
+        format_model_name = f"{model_name}".upper()
+        format_model_name = format_model_name.replace("-", "_")
+        client = openai.OpenAI(api_key=os.getenv(f"{format_model_name.upper()}_API_KEY", os.getenv("LLM_API_KEY", "")),
+                               base_url=os.getenv(f"{format_model_name.upper()}_API_URL", os.getenv("LLM_BASE_URL")))
         return client.chat.completions.create(
             model=model_name,
             messages=[
                 {"role": "user", "content": query},
             ],
             stream=False
-        )["choices"][0]["message"]["content"]
+        ).choices[0].message.content
 
     return _gen
-
-
