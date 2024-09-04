@@ -29,11 +29,10 @@ def build_agent(call_user_func, writer_queue):
                 'description': '根据案情选择合适的诉讼文书模板。',
                 'instructions': '你负责确定是起诉书、上诉状还是再审申请书，在记事本里添加模板。'
                                 '并把应该向用户获取的资料添加到记事本里。以便你的团队以便继续准备编写文书的资料。\n'
-                                '一定要把模板全文添加到记事本里，否则编写者会无法继续编写文书。\n'
                                 '你只需要确定模板，不要做过多的分析\n'
                                 '对话简短，把需要的信息都写在记事本里，其他发言在100字以内',
                 'knowledge_files': [],
-                'selected_tools': [PatternSearch(), team_notepad]
+                'selected_tools': [PatternSearch(team_notepad), team_notepad]
             },
             {
                 'name': '反垄断法律专家',
