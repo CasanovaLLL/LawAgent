@@ -48,3 +48,48 @@ def generate_zhipuai_data(model_name: str):
         return response_str
 
     return _gen
+
+
+def generate_data_from_excel(excel_path):
+    import pandas as pd
+    df = pd.read_excel(excel_path)
+    df["Q"] = df["Q"].apply(lambda x: x.strip())
+    dictionary = df.set_index('Q')['A'].to_dict()
+
+    def _gen(query):
+        query = query.strip()
+        return dictionary.get(query)
+
+    return _gen
+
+
+def generate_data_from_tongyi_farui_api():
+    """
+    7毛一次也太贵了！
+    TODO
+    """
+    from alibabacloud_tea_openapi import models as open_api_models
+    from alibabacloud_farui20240628.client import Client as Client
+    from alibabacloud_farui20240628 import models as models
+
+    access_key_id = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_ID')
+    access_key_secret = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET')
+    config = open_api_models.Config(
+        # 您的AccessKey ID,
+        access_key_id=access_key_id,
+        # 您的AccessKey Secret,
+        access_key_secret=access_key_secret
+    )
+    # 访问的域名
+    config.endpoint = 'farui.cn-beijing.aliyuncs.com'
+
+    client = Client(config)
+    request = models.RunLegalAdviceConsultationRequest()
+    # 该参数值为假设值，请您根据实际情况进行填写
+    request.app_id = "LawAgent"
+
+    # 该参数值为假设值，请您根据实际情况进行填写
+    request.stream = False
+
+    # 该参数值为假设值，请您根据实际情况进行填写
+    request.workspace_id = "your_value"
