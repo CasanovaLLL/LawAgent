@@ -68,7 +68,8 @@ class EvaluateDataset:
 
 if __name__ == '__main__':
     evaluate_dataset = EvaluateDataset('data/evaluate/反垄断QA20.xlsx')
-    from LawAgent.evaluate.generate_data import generate_dify_data, generate_oai_data
+    from LawAgent.evaluate.generate_data import generate_dify_data, generate_oai_data, generate_zhipuai_data
 
     # evaluate_dataset.evaluate(generate_dify_data, "dify")
-    evaluate_dataset.evaluate(generate_oai_data("meta-llama/Meta-Llama-3.1-405B-Instruct"), "meta-llama/Meta-Llama-3.1-405B-Instruct")
+    # evaluate_dataset.evaluate(generate_oai_data("meta-llama/Meta-Llama-3.1-405B-Instruct"), "meta-llama/Meta-Llama-3.1-405B-Instruct")
+    generate_zhipuai_data('glm-4-plus')
