@@ -1,0 +1,171 @@
+app:
+  description: “【待处理】行政处罚决定书” 文件夹及其子文件夹的所有文书的摘要
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 摘要生成-行政处罚
+kind: app
+version: 0.1.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1722843266535-source-1722843275789-target
+      source: '1722843266535'
+      sourceHandle: source
+      target: '1722843275789'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1722843275789-source-1722843278187-target
+      source: '1722843275789'
+      sourceHandle: source
+      target: '1722843278187'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: query
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+      height: 90
+      id: '1722843266535'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: fa0ddf35-f694-4201-b737-623cd0c3e817
+          role: system
+          text: '请仅根据以上内容编写一段摘要，500字以内，包含内容及格式如下：
+
+            ''''''
+
+            案例名称：输出案例的全称
+
+            当事人及其基本情况：
+
+            处罚决定日期：
+
+            违法事实：
+
+            相关产品市场：
+
+            相关地域市场：
+
+            违法分析：
+
+            处罚依据：
+
+            处罚决定：要具体到哪部法第几条第几款第几项（如有）
+
+            判决日期：
+
+            '''''''
+        - id: 6d676556-f9c7-407c-b53d-24fd90e572a6
+          role: user
+          text: '{{#1722843266535.query#}}'
+        selected: true
+        title: 行政处罚LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1722843275789'
+      position:
+        x: 384
+        y: 282
+      positionAbsolute:
+        x: 384
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1722843275789'
+          - text
+          variable: output
+        selected: false
+        title: 结束
+        type: end
+      height: 90
+      id: '1722843278187'
+      position:
+        x: 684.48529296252
+        y: 282
+      positionAbsolute:
+        x: 684.48529296252
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -397.15463386209797
+      y: 21.037738069242266
+      zoom: 1.138074939773077

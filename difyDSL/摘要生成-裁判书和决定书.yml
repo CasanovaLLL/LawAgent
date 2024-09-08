@@ -1,0 +1,170 @@
+app:
+  description: "【待处理】反垄断民事判决书和裁定书 \n该文件夹及其子文件夹下的文书摘要生成"
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 摘要生成-裁判书和决定书
+kind: app
+version: 0.1.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1722435908495-source-1722435911031-target
+      source: '1722435908495'
+      sourceHandle: source
+      target: '1722435911031'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1722435911031-source-1722435922852-target
+      source: '1722435911031'
+      sourceHandle: source
+      target: '1722435922852'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: query
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+      height: 89
+      id: '1722435908495'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: 770a06fa-5967-4c14-baf4-9f4163730638
+          role: system
+          text: '请仅根据以上内容编写一段摘要，500字以内，包含内容及格式如下：
+
+            ''''''
+
+            案例名称：输出案例的全称
+
+            案号：
+
+            判决日期：
+
+            案由：
+
+            当事人：
+
+            诉讼请求：
+
+            事实概述：包括法院认定的事实
+
+            法院认为：根据争议焦点，分点整理法院的裁判分析及观点
+
+            裁判依据：要具体到哪部法第几条
+
+            裁判结果：
+
+            '''''''
+        - role: user
+          text: '{{#1722435908495.query#}}'
+        selected: false
+        title: 判决书、裁定书摘要
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 97
+      id: '1722435911031'
+      position:
+        x: 384
+        y: 282
+      positionAbsolute:
+        x: 384
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1722435911031'
+          - text
+          variable: output
+        selected: true
+        title: 结束
+        type: end
+      height: 89
+      id: '1722435922852'
+      position:
+        x: 688
+        y: 282
+      positionAbsolute:
+        x: 688
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 48.348493468385016
+      y: 252.45772911869526
+      zoom: 0.502083771619489

@@ -1,0 +1,156 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 案例分类提取工作流
+kind: app
+version: 0.1.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1722826576761-source-1722826686904-target
+      source: '1722826576761'
+      sourceHandle: source
+      target: '1722826686904'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1722826686904-source-1722826731835-target
+      source: '1722826686904'
+      sourceHandle: source
+      target: '1722826731835'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: query
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+      height: 90
+      id: '1722826576761'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.1
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: c723890c-a5fc-4401-a147-56433edde526
+          role: system
+          text: "你是一个精确的分类器。\n请对文书的内容精确分析，并将文书中涉及的争议焦点归类到以下<categoties></categories>中的分类里。\n\
+            分类时请关注文书中涉及的反垄断法法条。\n可涉及多个分类。\n请不要输出<categoties></categories>外的其他分类\n\n\
+            <categories>\n经营者集中\n横向垄断协议-固定或者变更商品价格\t\n横向垄断协议-限制商品的生产数量或者销售数量\t\n横向垄断协议-分割销售市场或者原材料采购市场\t\
+            \n横向垄断协议-限制购买新技术、新设备或者限制开发新技术、新产品\t\n横向垄断协议-联合抵制交易\n纵向垄断协议-固定向第三人转售商品的价格\t\
+            \n纵向垄断协议-限定向第三人转售商品的最低价格\t\n滥用市场支配地位-以不公平的高价销售商品或者以不公平的低价购买商品\t\n滥用市场支配地位-没有正当理由，以低于成本的价格销售商品\t\
+            \n滥用市场支配地位-没有正当理由，拒绝与交易相对人进行交易\t\n滥用市场支配地位-没有正当理由，限定交易相对人只能与其进行交易或者只能与其指定的经营者进行交易\t\
+            \n滥用市场支配地位-没有正当理由搭售商品，或者在交易时附加其他不合理的交易条件\t\n滥用市场支配地位-没有正当理由，对条件相同的交易相对人在交易价格等交易条件上实行差别待遇\n\
+            </categories>\n\n只有在<categories></categories>中找不到对应分类的情况下，才可以考虑以下<categoties2></categories2>中的分类：\n\
+            <categoties2>\n横向垄断协议\n纵向垄断协议\n滥用市场支配地位\n</categories2>\n\n如果还找不到分类，请输出“”。\n\
+            \n请用json格式输出所有可能涉及的分类。\n"
+        - id: 5e09a5ff-d98f-4d59-8e58-8c42ac94e107
+          role: user
+          text: '{{#1722826576761.query#}}'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1722826686904'
+      position:
+        x: 378
+        y: 209
+      positionAbsolute:
+        x: 378
+        y: 209
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1722826686904'
+          - text
+          variable: output
+        selected: true
+        title: 结束
+        type: end
+      height: 90
+      id: '1722826731835'
+      position:
+        x: 682
+        y: 209
+      positionAbsolute:
+        x: 682
+        y: 209
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -396.0000000000001
+      y: 69
+      zoom: 1.0000000000000002

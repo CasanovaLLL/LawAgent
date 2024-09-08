@@ -1,0 +1,79 @@
+app:
+  description: 自动搜索生成分类的描述
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: agent-chat
+  name: 分类描述生成
+kind: app
+model_config:
+  agent_mode:
+    enabled: true
+    max_iteration: 2
+    prompt: null
+    strategy: function_call
+    tools:
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: bing
+      provider_name: bing
+      provider_type: builtin
+      tool_label: 必应网页搜索
+      tool_name: bing_web_search
+      tool_parameters:
+        enable_computation: ''
+        enable_entities: ''
+        enable_news: ''
+        enable_related_search: ''
+        enable_webpages: ''
+        language: ''
+        limit: ''
+        market: ''
+        query: ''
+        result_type: ''
+  annotation_reply:
+    enabled: false
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+  dataset_configs:
+    datasets:
+      datasets: []
+    retrieval_model: multiple
+  dataset_query_variable: ''
+  external_data_tools: []
+  file_upload:
+    image:
+      detail: high
+      enabled: false
+      number_limits: 3
+      transfer_methods:
+      - remote_url
+      - local_file
+  model:
+    completion_params:
+      stop: []
+    mode: chat
+    name: glm-4
+    provider: zhipuai
+  more_like_this:
+    enabled: false
+  opening_statement: ''
+  pre_prompt: 利用搜索引擎，为将一个案件分到以下的分类编写背景知识，主要包括类别的简介和类别间的差异
+  prompt_type: simple
+  retriever_resource:
+    enabled: false
+  sensitive_word_avoidance:
+    configs: []
+    enabled: false
+    type: ''
+  speech_to_text:
+    enabled: false
+  suggested_questions: []
+  suggested_questions_after_answer:
+    enabled: false
+  text_to_speech:
+    enabled: false
+    language: ''
+    voice: ''
+  user_input_form: []
+version: 0.1.1

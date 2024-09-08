@@ -1,0 +1,169 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 法条提取工作流
+kind: app
+version: 0.1.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1722941452922-source-1722941456090-target
+      source: '1722941452922'
+      sourceHandle: source
+      target: '1722941456090'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1722941456090-source-1722941502829-target
+      source: '1722941456090'
+      sourceHandle: source
+      target: '1722941502829'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: true
+        title: 开始
+        type: start
+        variables:
+        - label: query
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+      height: 90
+      id: '1722941452922'
+      position:
+        x: 79
+        y: 282
+      positionAbsolute:
+        x: 79
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: 6a77be9c-c932-4749-af00-9ecbb5c08df1
+          role: system
+          text: '请提取文书中明确涉及的法条。
+
+            如果有，具体到第几款、第几项。
+
+            不要遗漏。
+
+            如果找不到法条，输出“没有找到”，不要杜撰。
+
+            每个法条输出后换行。
+
+            注意法条按顺序排列。
+
+            输出格式如下（不输出<example></example>）
+
+            <example>
+
+            《中华人民共和国反垄断法》第几条第几款第几项
+
+            《中华人民共和国反垄断法》第几条第几款
+
+            《中华人民共和国行政处罚法》第几条
+
+            </example>'
+        - id: 0dea0861-38e1-4855-a160-264ee19dad2d
+          role: user
+          text: '{{#1722941452922.query#}}'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1722941456090'
+      position:
+        x: 384
+        y: 282
+      positionAbsolute:
+        x: 384
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1722941456090'
+          - text
+          variable: output
+        selected: false
+        title: 结束
+        type: end
+      height: 90
+      id: '1722941502829'
+      position:
+        x: 688
+        y: 282
+      positionAbsolute:
+        x: 688
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -33.75281780506663
+      y: 111.81357614734372
+      zoom: 0.6561056272959809

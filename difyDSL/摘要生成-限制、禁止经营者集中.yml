@@ -1,0 +1,164 @@
+app:
+  description: 案例合并在一个word文档中，需要把案例分开后，再提取摘要。
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 摘要生成-限制、禁止经营者集中
+kind: app
+version: 0.1.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1722845700368-source-1722845710953-target
+      source: '1722845700368'
+      sourceHandle: source
+      target: '1722845710953'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1722845710953-source-1722845713950-target
+      source: '1722845710953'
+      sourceHandle: source
+      target: '1722845713950'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: query
+          max_length: 100000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+      height: 90
+      id: '1722845700368'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: 55aaf9ac-4670-4bef-ad1c-9e934e43ba7c
+          role: system
+          text: '请仅根据以上内容编写一段摘要，500字以内，包含内容及格式如下：
+
+            ''''''
+
+            案例名称：
+
+            时间：
+
+            经营者集中主体：
+
+            审查内容：
+
+            相关市场：区分“相关产品市场”和“相关地域市场”
+
+            竞争问题分析：
+
+            审查决定：
+
+            '''''''
+        - role: user
+          text: '{{#1722845700368.query#}}'
+        selected: false
+        title: 经营者集中每个案例摘要 LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1722845710953'
+      position:
+        x: 384
+        y: 282
+      positionAbsolute:
+        x: 384
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1722845710953'
+          - text
+          variable: output
+        selected: true
+        title: 结束
+        type: end
+      height: 90
+      id: '1722845713950'
+      position:
+        x: 688
+        y: 282
+      positionAbsolute:
+        x: 688
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -369.9767081233631
+      y: 12.575548260154449
+      zoom: 0.8950250709279723
